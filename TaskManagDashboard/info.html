@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Management Dashboard</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Particles.js -->
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Orbitron:wght@700&display=swap');
+    body {
+      background: linear-gradient(135deg, #1e3c72, #2a5298, #4ecdc4);
+      min-height: 100vh;
+      font-family: 'Poppins', sans-serif;
+      overflow-x: hidden;
+      position: relative;
+      color: #ffffff;
+    }
+    #particles-js {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    .kanban-column {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(78, 205, 196, 0.5);
+      box-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
+      transition: all 0.4s ease;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .kanban-column::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(78, 205, 196, 0.2) 0%, transparent 70%);
+      z-index: 0;
+    }
+    .kanban-column:hover {
+      transform: translateY(-8px) scale(1.03);
+      box-shadow: 0 0 30px rgba(78, 205, 196, 0.5);
+    }
+    .task-card {
+      cursor: move;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(78, 205, 196, 0.3);
+      border-radius: 10px;
+      padding: 1rem;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      animation: float 3s infinite ease-in-out;
+    }
+    @keyframes float {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+      100% { transform: translateY(0); }
+    }
+    .task-card:hover {
+      transform: scale(1.05) translateY(-5px);
+      box-shadow: 0 10px 20px rgba(78, 205, 196, 0.4);
+    }
+    .drag-over {
+      border: 2px dashed #4ecdc4;
+      background: rgba(78, 205, 196, 0.1);
+    }
+    .priority-high { border-left: 5px solid #ff6b6b; }
+    .priority-medium { border-left: 5px solid #feca57; }
+    .priority-low { border-left: 5px solid #48dbfb; }
+    .navbar {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    .navbar-brand {
+      font-family: 'Orbitron', sans-serif;
+      color: #4ecdc4;
+      text-shadow: 0 0 10px rgba(78, 205, 196, 0.7);
+    }
+    .btn-primary {
+      background: linear-gradient(45deg, #4ecdc4, #2a5298);
+      border: none;
+      padding: 0.5rem 1.5rem;
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(78, 205, 196, 0.8);
+    }
+    .modal-content {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(78, 205, 196, 0.5);
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+    }
+    .form-control {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(78, 205, 196, 0.3);
+      color: #ffffff;
+    }
+    .form-control:focus {
+      border-color: #4ecdc4;
+      box-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+    }
+  </style>
+</head>
+<body class="py-8">
+  <!-- Particle Background -->
+  <div id="particles-js"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg shadow-lg mb-6 mx-6 rounded-lg">
+    <div class="container">
+      <a class="navbar-brand text-3xl font-bold" href="#">TaskVibe</a>
+      <button class="btn btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+        + Add Task
+      </button>
+    </div>
+  </nav>
+
+  <!-- Kanban Board -->
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="kanban-column">
+          <h2 class="text-2xl font-semibold mb-4">To Do</h2>
+          <div class="task-list" id="todo" ondragover="allowDrop(event)" ondrop="drop(event, 'todo')">
+            <!-- Tasks will be dynamically added here -->
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="kanban-column">
+          <h2 class="text-2xl font-semibold mb-4">In Progress</h2>
+          <div class="task-list" id="in-progress" ondragover="allowDrop(event)" ondrop="drop(event, 'in-progress')">
+            <!-- Tasks will be dynamically added here -->
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="kanban-column">
+          <h2 class="text-2xl font-semibold mb-4">Done</h2>
+          <div class="task-list" id="done" ondragover="allowDrop(event)" ondrop="drop(event, 'done')">
+            <!-- Tasks will be dynamically added here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Task Modal -->
+  <div class="modal fade" id="addTaskModal" tabindex="-1" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title text-2xl" id="addTaskModalLabel">Add New Task</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="taskForm">
+            <div class="mb-4">
+              <label for="taskTitle" class="form-label text-lg">Task Title</label>
+              <input type="text" class="form-control py-2" id="taskTitle" required>
+            </div>
+            <div class="mb-4">
+              <label for="taskDescription" class="form-label text-lg">Description</label>
+              <textarea class="form-control py-2" id="taskDescription" rows="4"></textarea>
+            </div>
+            <div class="mb-4">
+              <label for="taskPriority" class="form-label text-lg">Priority</label>
+              <select class="form-select py-2" id="taskPriority">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <input type="hidden" id="taskStatus" value="todo">
+            <input type="hidden" id="taskId">
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary px-4 py-2" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary px-4 py-2" onclick="saveTask()">Save Task</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Initialize Particles.js
+    particlesJS('particles-js', {
+      particles: {
+        number: { value: 80, density: { enable: true, value_area: 800 } },
+        color: { value: ['#4ecdc4', '#2a5298', '#ff6b6b'] },
+        shape: { type: 'circle' },
+        opacity: { value: 0.5, random: true },
+        size: { value: 4, random: true },
+        line_linked: { enable: true, distance: 150, color: '#4ecdc4', opacity: 0.4, width: 1 },
+        move: { enable: true, speed: 2, direction: 'none', random: false }
+      },
+      interactivity: {
+        detect_on: 'canvas',
+        events: { onhover: { enable: true, mode: 'repulse' }, onclick: { enable: true, mode: 'push' } },
+        modes: { repulse: { distance: 100 }, push: { particles_nb: 4 } }
+      },
+      retina_detect: true
+    });
+
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [
+      { id: '1', title: 'Design Homepage', description: 'Create wireframes for homepage', priority: 'high', status: 'todo' },
+      { id: '2', title: 'API Integration', description: 'Connect to REST API', priority: 'medium', status: 'in-progress' },
+      { id: '3', title: 'Test Features', description: 'Run unit tests', priority: 'low', status: 'done' }
+    ];
+
+    function renderTasks() {
+      ['todo', 'in-progress', 'done'].forEach(status => {
+        const taskList = document.getElementById(status);
+        taskList.innerHTML = '';
+        tasks.filter(task => task.status === status).forEach(task => {
+          const taskElement = document.createElement('div');
+          taskElement.className = `task-card p-3 mb-3 rounded-lg shadow-lg priority-${task.priority}`;
+          taskElement.draggable = true;
+          taskElement.id = task.id;
+          taskElement.innerHTML = `
+            <h3 class="text-lg font-semibold">${task.title}</h3>
+            <p class="text-sm text-gray-200">${task.description || 'No description'}</p>
+            <p class="text-xs text-gray-400">Priority: ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}</p>
+            <button class="text-blue-300 hover:text-blue-100 mt-2" onclick="editTask('${task.id}')">Edit</button>
+            <button class="text-red-300 hover:text-red-100 mt-2 ms-2" onclick="deleteTask('${task.id}')">Delete</button>
+          `;
+          taskElement.addEventListener('dragstart', drag);
+          taskList.appendChild(taskElement);
+        });
+      });
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function allowDrop(event) {
+      event.preventDefault();
+      event.currentTarget.classList.add('drag-over');
+    }
+
+    function drag(event) {
+      event.dataTransfer.setData('text', event.target.id);
+      event.currentTarget.classList.add('opacity-50');
+    }
+
+    function drop(event, status) {
+      event.preventDefault();
+      const taskId = event.dataTransfer.getData('text');
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        task.status = status;
+        renderTasks();
+      }
+      event.currentTarget.classList.remove('drag-over');
+    }
+
+    function saveTask() {
+      const taskId = document.getElementById('taskId').value || Date.now().toString();
+      const task = {
+        id: taskId,
+        title: document.getElementById('taskTitle').value,
+        description: document.getElementById('taskDescription').value,
+        priority: document.getElementById('taskPriority').value,
+        status: document.getElementById('taskStatus').value
+      };
+      const taskIndex = tasks.findIndex(t => t.id === taskId);
+      if (taskIndex >= 0) {
+        tasks[taskIndex] = task;
+      } else {
+        tasks.push(task);
+      }
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      renderTasks();
+      document.getElementById('taskForm').reset();
+      document.getElementById('taskId').value = '';
+      document.getElementById('taskStatus').value = 'todo';
+      bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide();
+    }
+
+    function editTask(id) {
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        document.getElementById('taskTitle').value = task.title;
+        document.getElementById('taskDescription').value = task.description;
+        document.getElementById('taskPriority').value = task.priority;
+        document.getElementById('taskStatus').value = task.status;
+        document.getElementById('taskId').value = task.id;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('addTaskModal')).show();
+      }
+    }
+
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      renderTasks();
+    }
+
+    // Initialize task board
+    renderTasks();
+
+    // Remove drag-over class when drag ends
+    document.querySelectorAll('.task-list').forEach(list => {
+      list.addEventListener('dragleave', () => list.classList.remove('drag-over'));
+      list.addEventListener('dragend', () => {
+        document.querySelectorAll('.task-card').forEach(card => card.classList.remove('opacity-50'));
+      });
+    });
+  </script>
+</body>
+</html>
